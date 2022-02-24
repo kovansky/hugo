@@ -1,4 +1,4 @@
-module github.com/gohugoio/hugo
+module github.com/kovansky/hugo
 
 require (
 	cloud.google.com/go/iam v0.2.0 // indirect
