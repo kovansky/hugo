@@ -36,19 +36,20 @@ type FuncMap map[string]interface{}
 // TODO: revert this back to a global map once golang.org/issue/2559 is fixed.
 func builtins() FuncMap {
 	return FuncMap{
-		"and":      and,
-		"call":     call,
-		"html":     HTMLEscaper,
-		"index":    index,
-		"slice":    slice,
-		"js":       JSEscaper,
-		"len":      length,
-		"not":      not,
-		"or":       or,
-		"print":    fmt.Sprint,
-		"printf":   fmt.Sprintf,
-		"println":  fmt.Sprintln,
-		"urlquery": URLQueryEscaper,
+		"and":       and,
+		"call":      call,
+		"html":      HTMLEscaper,
+		"index":     index,
+		"safeIndex": safeIndex,
+		"slice":     slice,
+		"js":        JSEscaper,
+		"len":       length,
+		"not":       not,
+		"or":        or,
+		"print":     fmt.Sprint,
+		"printf":    fmt.Sprintf,
+		"println":   fmt.Sprintln,
+		"urlquery":  URLQueryEscaper,
 
 		// Comparisons
 		"eq": eq, // ==
@@ -239,6 +240,18 @@ func index(item reflect.Value, indexes ...reflect.Value) (reflect.Value, error) 
 		}
 	}
 	return item, nil
+}
+
+// safeIndex returns the result of indexing its first argument by the following
+// arguments. Thus "index x 1 2 3" is, in Go syntax, x[1][2][3]. Each
+// indexed item must be a map, slice, or array. Doesn't return errors, just empty value.
+func safeIndex(item reflect.Value, indexes ...reflect.Value) reflect.Value {
+	item, err := index(item, indexes...)
+	if err != nil {
+		return reflect.Value{}
+	}
+
+	return item
 }
 
 // Slicing.
