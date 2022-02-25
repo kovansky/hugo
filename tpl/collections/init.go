@@ -96,6 +96,11 @@ func init() {
 			[][2]string{},
 		)
 
+		ns.AddMethodMapping(ctx.SafeIndex,
+			[]string{"safeIndex"},
+			[][2]string{},
+		)
+
 		ns.AddMethodMapping(ctx.Intersect,
 			[]string{"intersect"},
 			[][2]string{},

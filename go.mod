@@ -1,4 +1,4 @@
-module github.com/kovansky/hugo
+module github.com/gohugoio/hugo
 
 require (
 	cloud.google.com/go/iam v0.2.0 // indirect
@@ -69,5 +69,7 @@ require (
 	google.golang.org/api v0.70.0
 	gopkg.in/yaml.v2 v2.4.0
 )
+
+replace github.com/gohugoio/hugo => github.com/kovansky/hugo v0.92.3-0.20220224232819-63076e4ff19f
 
 go 1.16
