@@ -70,6 +70,4 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 )
 
-replace github.com/gohugoio/hugo => github.com/kovansky/hugo v0.92.3-0.20220224232819-63076e4ff19f
-
 go 1.16
