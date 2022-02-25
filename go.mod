@@ -1,4 +1,4 @@
-module github.com/kovansky/hugo
+module github.com/gohugoio/hugo
 
 require (
 	github.com/BurntSushi/locker v0.0.0-20171006230638-a6e239ea1c69
@@ -67,5 +67,7 @@ require (
 	google.golang.org/api v0.63.0
 	gopkg.in/yaml.v2 v2.4.0
 )
+
+replace github.com/gohugoio/hugo => github.com/kovansky/hugo v0.92.3-0.20220224232819-63076e4ff19f
 
 go 1.16
