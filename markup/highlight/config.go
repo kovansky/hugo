@@ -23,8 +23,17 @@ import (
 	"github.com/spf13/cast"
 
 	"github.com/gohugoio/hugo/config"
+	"github.com/gohugoio/hugo/markup/converter/hooks"
 
 	"github.com/mitchellh/mapstructure"
+)
+
+const (
+	lineanchorsKey = "lineanchors"
+	lineNosKey     = "linenos"
+	hlLinesKey     = "hl_lines"
+	linosStartKey  = "linenostart"
+	noHlKey        = "nohl"
 )
 
 var DefaultConfig = Config{
@@ -38,7 +47,6 @@ var DefaultConfig = Config{
 	TabWidth:           4,
 }
 
-//
 type Config struct {
 	Style string
 
@@ -65,7 +73,7 @@ type Config struct {
 	Hl_Lines string
 
 	// A parsed and ready to use list of line ranges.
-	HL_lines_parsed [][2]int
+	HL_lines_parsed [][2]int `json:"-"`
 
 	// TabWidth sets the number of characters for a tab. Defaults to 4.
 	TabWidth int
@@ -114,10 +122,13 @@ func applyOptions(opts interface{}, cfg *Config) error {
 	switch vv := opts.(type) {
 	case map[string]interface{}:
 		return applyOptionsFromMap(vv, cfg)
-	case string:
-		return applyOptionsFromString(vv, cfg)
+	default:
+		s, err := cast.ToStringE(opts)
+		if err != nil {
+			return err
+		}
+		return applyOptionsFromString(s, cfg)
 	}
-	return nil
 }
 
 func applyOptionsFromString(opts string, cfg *Config) error {
@@ -131,6 +142,16 @@ func applyOptionsFromString(opts string, cfg *Config) error {
 func applyOptionsFromMap(optsm map[string]interface{}, cfg *Config) error {
 	normalizeHighlightOptions(optsm)
 	return mapstructure.WeakDecode(optsm, cfg)
+}
+
+func applyOptionsFromCodeBlockContext(ctx hooks.CodeblockContext, cfg *Config) error {
+	if cfg.LineAnchors == "" {
+		const lineAnchorPrefix = "hl-"
+		// Set it to the ordinal with a prefix.
+		cfg.LineAnchors = fmt.Sprintf("%s%d", lineAnchorPrefix, ctx.Ordinal())
+	}
+
+	return nil
 }
 
 // ApplyLegacyConfig applies legacy config from back when we had
@@ -190,13 +211,6 @@ func normalizeHighlightOptions(m map[string]interface{}) {
 	if m == nil {
 		return
 	}
-
-	const (
-		lineNosKey    = "linenos"
-		hlLinesKey    = "hl_lines"
-		linosStartKey = "linenostart"
-		noHlKey       = "nohl"
-	)
 
 	baseLineNumber := 1
 	if v, ok := m[linosStartKey]; ok {
