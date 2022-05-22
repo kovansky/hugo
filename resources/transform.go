@@ -24,8 +24,7 @@ import (
 
 	"github.com/gohugoio/hugo/common/paths"
 
-	"github.com/pkg/errors"
-
+	"github.com/gohugoio/hugo/resources/images"
 	"github.com/gohugoio/hugo/resources/images/exif"
 	"github.com/spf13/afero"
 
@@ -108,7 +107,7 @@ type ResourceTransformationCtx struct {
 
 	// Data data can be set on the transformed Resource. Not that this need
 	// to be simple types, as it needs to be serialized to JSON and back.
-	Data map[string]interface{}
+	Data map[string]any
 
 	// This is used to publish additional artifacts, e.g. source maps.
 	// We may improve this.
@@ -159,7 +158,7 @@ type resourceAdapter struct {
 	*resourceAdapterInner
 }
 
-func (r *resourceAdapter) Content() (interface{}, error) {
+func (r *resourceAdapter) Content() (any, error) {
 	r.init(false, true)
 	if r.transformationsErr != nil {
 		return nil, r.transformationsErr
@@ -167,28 +166,28 @@ func (r *resourceAdapter) Content() (interface{}, error) {
 	return r.target.Content()
 }
 
-func (r *resourceAdapter) Err() error {
+func (r *resourceAdapter) Err() resource.ResourceError {
 	return nil
 }
 
-func (r *resourceAdapter) Data() interface{} {
+func (r *resourceAdapter) Data() any {
 	r.init(false, false)
 	return r.target.Data()
 }
 
-func (r *resourceAdapter) Crop(spec string) (resource.Image, error) {
+func (r *resourceAdapter) Crop(spec string) (images.ImageResource, error) {
 	return r.getImageOps().Crop(spec)
 }
 
-func (r *resourceAdapter) Fill(spec string) (resource.Image, error) {
+func (r *resourceAdapter) Fill(spec string) (images.ImageResource, error) {
 	return r.getImageOps().Fill(spec)
 }
 
-func (r *resourceAdapter) Fit(spec string) (resource.Image, error) {
+func (r *resourceAdapter) Fit(spec string) (images.ImageResource, error) {
 	return r.getImageOps().Fit(spec)
 }
 
-func (r *resourceAdapter) Filter(filters ...interface{}) (resource.Image, error) {
+func (r *resourceAdapter) Filter(filters ...any) (images.ImageResource, error) {
 	return r.getImageOps().Filter(filters...)
 }
 
@@ -196,7 +195,7 @@ func (r *resourceAdapter) Height() int {
 	return r.getImageOps().Height()
 }
 
-func (r *resourceAdapter) Exif() *exif.Exif {
+func (r *resourceAdapter) Exif() *exif.ExifInfo {
 	return r.getImageOps().Exif()
 }
 
@@ -241,7 +240,7 @@ func (r *resourceAdapter) RelPermalink() string {
 	return r.target.RelPermalink()
 }
 
-func (r *resourceAdapter) Resize(spec string) (resource.Image, error) {
+func (r *resourceAdapter) Resize(spec string) (images.ImageResource, error) {
 	return r.getImageOps().Resize(spec)
 }
 
@@ -281,8 +280,8 @@ func (r *resourceAdapter) DecodeImage() (image.Image, error) {
 	return r.getImageOps().DecodeImage()
 }
 
-func (r *resourceAdapter) getImageOps() resource.ImageOps {
-	img, ok := r.target.(resource.ImageOps)
+func (r *resourceAdapter) getImageOps() images.ImageResourceOps {
+	img, ok := r.target.(images.ImageResourceOps)
 	if !ok {
 		panic(fmt.Sprintf("%T is not an image", r.target))
 	}
@@ -355,7 +354,7 @@ func (r *resourceAdapter) transform(publish, setContent bool) error {
 	defer bp.PutBuffer(b2)
 
 	tctx := &ResourceTransformationCtx{
-		Data:                  make(map[string]interface{}),
+		Data:                  make(map[string]any),
 		OpenResourcePublisher: r.target.openPublishFileForWriting,
 	}
 
@@ -430,10 +429,10 @@ func (r *resourceAdapter) transform(publish, setContent bool) error {
 					errMsg = ". You need to install Babel, see https://gohugo.io/hugo-pipes/babel/"
 				}
 
-				return errors.Wrap(err, msg+errMsg)
+				return fmt.Errorf(msg+errMsg+": %w", err)
 			}
 
-			return errors.Wrap(err, msg)
+			return fmt.Errorf(msg+": %w", err)
 		}
 
 		var tryFileCache bool
@@ -460,7 +459,7 @@ func (r *resourceAdapter) transform(publish, setContent bool) error {
 				if err != nil {
 					return newErr(err)
 				}
-				return newErr(errors.Errorf("resource %q not found in file cache", key))
+				return newErr(fmt.Errorf("resource %q not found in file cache", key))
 			}
 			transformedContentr = f
 			updates.sourceFs = cache.fileCache.Fs
@@ -605,7 +604,7 @@ type transformationUpdate struct {
 	sourceFs       afero.Fs
 	targetPath     string
 	mediaType      media.Type
-	data           map[string]interface{}
+	data           map[string]any
 
 	startCtx ResourceTransformationCtx
 }
@@ -631,9 +630,9 @@ func (u *transformationUpdate) updateFromCtx(ctx *ResourceTransformationCtx) {
 
 // We will persist this information to disk.
 type transformedResourceMetadata struct {
-	Target     string                 `json:"Target"`
-	MediaTypeV string                 `json:"MediaType"`
-	MetaData   map[string]interface{} `json:"Data"`
+	Target     string         `json:"Target"`
+	MediaTypeV string         `json:"MediaType"`
+	MetaData   map[string]any `json:"Data"`
 }
 
 // contentReadSeekerCloser returns a ReadSeekerCloser if possible for a given Resource.

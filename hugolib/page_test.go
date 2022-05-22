@@ -22,20 +22,20 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bep/clock"
 	"github.com/gohugoio/hugo/htesting"
-
 	"github.com/gohugoio/hugo/markup/asciidocext"
 	"github.com/gohugoio/hugo/markup/rst"
 
 	"github.com/gohugoio/hugo/config"
 
+	"github.com/gohugoio/hugo/common/htime"
 	"github.com/gohugoio/hugo/common/loggers"
 
 	"github.com/gohugoio/hugo/hugofs"
 
 	"github.com/gohugoio/hugo/resources/page"
 	"github.com/gohugoio/hugo/resources/resource"
-	"github.com/spf13/afero"
 	"github.com/spf13/jwalterweatherman"
 
 	qt "github.com/frankban/quicktest"
@@ -298,7 +298,7 @@ func checkPageTitle(t *testing.T, page page.Page, title string) {
 	}
 }
 
-func checkPageContent(t *testing.T, page page.Page, expected string, msg ...interface{}) {
+func checkPageContent(t *testing.T, page page.Page, expected string, msg ...any) {
 	t.Helper()
 	a := normalizeContent(expected)
 	b := normalizeContent(content(page))
@@ -325,7 +325,7 @@ func checkPageTOC(t *testing.T, page page.Page, toc string) {
 	}
 }
 
-func checkPageSummary(t *testing.T, page page.Page, summary string, msg ...interface{}) {
+func checkPageSummary(t *testing.T, page page.Page, summary string, msg ...any) {
 	a := normalizeContent(string(page.Summary()))
 	b := normalizeContent(summary)
 	if a != b {
@@ -369,7 +369,7 @@ func normalizeExpected(ext, str string) string {
 }
 
 func testAllMarkdownEnginesForPages(t *testing.T,
-	assertFunc func(t *testing.T, ext string, pages page.Pages), settings map[string]interface{}, pageSources ...string) {
+	assertFunc func(t *testing.T, ext string, pages page.Pages), settings map[string]any, pageSources ...string) {
 
 	engines := []struct {
 		ext           string
@@ -399,8 +399,8 @@ func testAllMarkdownEnginesForPages(t *testing.T,
 				contentDir = s
 			}
 
-			cfg.Set("security", map[string]interface{}{
-				"exec": map[string]interface{}{
+			cfg.Set("security", map[string]any{
+				"exec": map[string]any{
 					"allow": []string{"^python$", "^rst2html.*", "^asciidoctor$"},
 				},
 			})
@@ -458,7 +458,7 @@ func TestPageWithDelimiterForMarkdownThatCrossesBorder(t *testing.T) {
 	}
 
 	cnt := content(p)
-	if cnt != "<p>The <a href=\"http://gohugo.io/\">best static site generator</a>.<sup id=\"fnref:1\"><a href=\"#fn:1\" class=\"footnote-ref\" role=\"doc-noteref\">1</a></sup></p>\n<section class=\"footnotes\" role=\"doc-endnotes\">\n<hr>\n<ol>\n<li id=\"fn:1\" role=\"doc-endnote\">\n<p>Many people say so.&#160;<a href=\"#fnref:1\" class=\"footnote-backref\" role=\"doc-backlink\">&#x21a9;&#xfe0e;</a></p>\n</li>\n</ol>\n</section>" {
+	if cnt != "<p>The <a href=\"http://gohugo.io/\">best static site generator</a>.<sup id=\"fnref:1\"><a href=\"#fn:1\" class=\"footnote-ref\" role=\"doc-noteref\">1</a></sup></p>\n<div class=\"footnotes\" role=\"doc-endnotes\">\n<hr>\n<ol>\n<li id=\"fn:1\">\n<p>Many people say so.&#160;<a href=\"#fnref:1\" class=\"footnote-backref\" role=\"doc-backlink\">&#x21a9;&#xfe0e;</a></p>\n</li>\n</ol>\n</div>" {
 		t.Fatalf("Got content:\n%q", cnt)
 	}
 }
@@ -572,7 +572,7 @@ func TestCreateNewPage(t *testing.T) {
 		checkPageType(t, p, "page")
 	}
 
-	settings := map[string]interface{}{
+	settings := map[string]any{
 		"contentDir": "mycontent",
 	}
 
@@ -697,7 +697,7 @@ func TestPageWithShortCodeInSummary(t *testing.T) {
 func TestPageWithAdditionalExtension(t *testing.T) {
 	t.Parallel()
 	cfg, fs := newTestCfg()
-	cfg.Set("markup", map[string]interface{}{
+	cfg.Set("markup", map[string]any{
 		"defaultMarkdownHandler": "blackfriday", // TODO(bep)
 	})
 
@@ -1031,26 +1031,26 @@ func TestPageWithLastmodFromGitInfo(t *testing.T) {
 	}
 	c := qt.New(t)
 
-	// We need to use the OS fs for this.
-	cfg := config.New()
-	fs := hugofs.NewFrom(hugofs.Os, cfg)
-	fs.Destination = &afero.MemMapFs{}
-
 	wd, err := os.Getwd()
 	c.Assert(err, qt.IsNil)
 
-	cfg.Set("frontmatter", map[string]interface{}{
+	// We need to use the OS fs for this.
+	cfg := config.NewWithTestDefaults()
+	cfg.Set("workingDir", filepath.Join(wd, "testsite"))
+	fs := hugofs.NewFrom(hugofs.Os, cfg)
+
+	cfg.Set("frontmatter", map[string]any{
 		"lastmod": []string{":git", "lastmod"},
 	})
 	cfg.Set("defaultContentLanguage", "en")
 
-	langConfig := map[string]interface{}{
-		"en": map[string]interface{}{
+	langConfig := map[string]any{
+		"en": map[string]any{
 			"weight":       1,
 			"languageName": "English",
 			"contentDir":   "content",
 		},
-		"nn": map[string]interface{}{
+		"nn": map[string]any{
 			"weight":       2,
 			"languageName": "Nynorsk",
 			"contentDir":   "content_nn",
@@ -1059,8 +1059,6 @@ func TestPageWithLastmodFromGitInfo(t *testing.T) {
 
 	cfg.Set("languages", langConfig)
 	cfg.Set("enableGitInfo", true)
-
-	cfg.Set("workingDir", filepath.Join(wd, "testsite"))
 
 	b := newTestSitesBuilderFromDepsCfg(t, deps.DepsCfg{Fs: fs, Cfg: cfg}).WithNothingAdded()
 
@@ -1102,7 +1100,7 @@ lastMod: 2018-02-28
 Content
 `
 
-			cfg.Set("frontmatter", map[string]interface{}{
+			cfg.Set("frontmatter", map[string]any{
 				"date": []string{dateHandler, "date"},
 			})
 
@@ -1163,7 +1161,7 @@ func TestWordCountWithAllCJKRunesWithoutHasCJKLanguage(t *testing.T) {
 
 func TestWordCountWithAllCJKRunesHasCJKLanguage(t *testing.T) {
 	t.Parallel()
-	settings := map[string]interface{}{"hasCJKLanguage": true}
+	settings := map[string]any{"hasCJKLanguage": true}
 
 	assertFunc := func(t *testing.T, ext string, pages page.Pages) {
 		p := pages[0]
@@ -1176,7 +1174,7 @@ func TestWordCountWithAllCJKRunesHasCJKLanguage(t *testing.T) {
 
 func TestWordCountWithMainEnglishWithCJKRunes(t *testing.T) {
 	t.Parallel()
-	settings := map[string]interface{}{"hasCJKLanguage": true}
+	settings := map[string]any{"hasCJKLanguage": true}
 
 	assertFunc := func(t *testing.T, ext string, pages page.Pages) {
 		p := pages[0]
@@ -1195,7 +1193,7 @@ func TestWordCountWithMainEnglishWithCJKRunes(t *testing.T) {
 
 func TestWordCountWithIsCJKLanguageFalse(t *testing.T) {
 	t.Parallel()
-	settings := map[string]interface{}{
+	settings := map[string]any{
 		"hasCJKLanguage": true,
 	}
 
@@ -1314,7 +1312,7 @@ func TestChompBOM(t *testing.T) {
 
 func TestPageWithEmoji(t *testing.T) {
 	for _, enableEmoji := range []bool{true, false} {
-		v := config.New()
+		v := config.NewWithTestDefaults()
 		v.Set("enableEmoji", enableEmoji)
 
 		b := newTestSitesBuilder(t).WithViper(v)
@@ -1540,7 +1538,6 @@ Content.
 }
 
 func TestShouldBuild(t *testing.T) {
-	t.Parallel()
 	past := time.Date(2009, 11, 17, 20, 34, 58, 651387237, time.UTC)
 	future := time.Date(2037, 11, 17, 20, 34, 58, 651387237, time.UTC)
 	zero := time.Time{}
@@ -1582,6 +1579,54 @@ func TestShouldBuild(t *testing.T) {
 			ps.publishDate, ps.expiryDate)
 		if s != ps.out {
 			t.Errorf("AssertShouldBuild unexpected output with params: %+v", ps)
+		}
+	}
+}
+
+func TestShouldBuildWithClock(t *testing.T) {
+	htime.Clock = clock.Start(time.Date(2021, 11, 17, 20, 34, 58, 651387237, time.UTC))
+	t.Cleanup(func() { htime.Clock = clock.System() })
+	past := time.Date(2009, 11, 17, 20, 34, 58, 651387237, time.UTC)
+	future := time.Date(2037, 11, 17, 20, 34, 58, 651387237, time.UTC)
+	zero := time.Time{}
+
+	publishSettings := []struct {
+		buildFuture  bool
+		buildExpired bool
+		buildDrafts  bool
+		draft        bool
+		publishDate  time.Time
+		expiryDate   time.Time
+		out          bool
+	}{
+		// publishDate and expiryDate
+		{false, false, false, false, zero, zero, true},
+		{false, false, false, false, zero, future, true},
+		{false, false, false, false, past, zero, true},
+		{false, false, false, false, past, future, true},
+		{false, false, false, false, past, past, false},
+		{false, false, false, false, future, future, false},
+		{false, false, false, false, future, past, false},
+
+		// buildFuture and buildExpired
+		{false, true, false, false, past, past, true},
+		{true, true, false, false, past, past, true},
+		{true, false, false, false, past, past, false},
+		{true, false, false, false, future, future, true},
+		{true, true, false, false, future, future, true},
+		{false, true, false, false, future, past, false},
+
+		// buildDrafts and draft
+		{true, true, false, true, past, future, false},
+		{true, true, true, true, past, future, true},
+		{true, true, true, true, past, future, true},
+	}
+
+	for _, ps := range publishSettings {
+		s := shouldBuild(ps.buildFuture, ps.buildExpired, ps.buildDrafts, ps.draft,
+			ps.publishDate, ps.expiryDate)
+		if s != ps.out {
+			t.Errorf("AssertShouldBuildWithClock unexpected output with params: %+v", ps)
 		}
 	}
 }
@@ -1653,11 +1698,11 @@ tags:
 				th.assertFileContent(pathFunc("public/post/test0.dot/index.html"), "some content")
 
 				if uglyURLs {
-					th.assertFileContent("public/post/page/1.html", `canonical" href="/post.html"/`)
+					th.assertFileContent("public/post/page/1.html", `canonical" href="/post.html"`)
 					th.assertFileContent("public/post.html", `<body>P1|URL: /post.html|Next: /post/page/2.html</body>`)
 					th.assertFileContent("public/post/page/2.html", `<body>P2|URL: /post/page/2.html|Next: /post/page/3.html</body>`)
 				} else {
-					th.assertFileContent("public/post/page/1/index.html", `canonical" href="/post/"/`)
+					th.assertFileContent("public/post/page/1/index.html", `canonical" href="/post/"`)
 					th.assertFileContent("public/post/index.html", `<body>P1|URL: /post/|Next: /post/page/2/</body>`)
 					th.assertFileContent("public/post/page/2/index.html", `<body>P2|URL: /post/page/2/|Next: /post/page/3/</body>`)
 					th.assertFileContent("public/tags/.net/index.html", `<body>P1|URL: /tags/.net/|Next: /tags/.net/page/2/</body>`)

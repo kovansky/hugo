@@ -1724,6 +1724,7 @@
           "table": true,
           "strikethrough": true,
           "linkify": true,
+          "linkifyProtocol": "https",
           "taskList": true
         }
       },
@@ -1843,7 +1844,7 @@
           "keepDocumentTags": true,
           "keepEndTags": true,
           "keepQuotes": false,
-          "keepWhitespace": true
+          "keepWhitespace": false
         },
         "css": {
           "keepCSS2": true,
@@ -1859,6 +1860,7 @@
           "keepNumbers": false
         },
         "svg": {
+          "keepComments": false,
           "precision": 0
         },
         "xml": {
@@ -3262,6 +3264,12 @@
           ],
           "Examples": []
         },
+        "LtCollate": {
+          "Description": "",
+          "Args": null,
+          "Aliases": null,
+          "Examples": null
+        },
         "Ne": {
           "Description": "Ne returns the boolean truth of arg1 != arg2 \u0026\u0026 arg1 != arg3 \u0026\u0026 arg1 != arg4.",
           "Args": [
@@ -3299,6 +3307,7 @@
         "Apply": {
           "Description": "Apply takes a map, array, or slice and returns a new slice with the function fname applied over it.",
           "Args": [
+            "ctx",
             "seq",
             "fname",
             "args"
@@ -3642,12 +3651,19 @@
         }
       },
       "crypto": {
+        "FNV32a": {
+          "Description": "",
+          "Args": null,
+          "Aliases": null,
+          "Examples": null
+        },
         "HMAC": {
           "Description": "HMAC returns a cryptographic hash that uses a key to sign a message.",
           "Args": [
             "h",
             "k",
-            "m"
+            "m",
+            "e"
           ],
           "Aliases": [
             "hmac"
@@ -4662,6 +4678,12 @@
           ],
           "Examples": []
         },
+        "ByType": {
+          "Description": "",
+          "Args": null,
+          "Aliases": null,
+          "Examples": null
+        },
         "Concat": {
           "Description": "",
           "Args": null,
@@ -4691,7 +4713,7 @@
           "Examples": null
         },
         "Get": {
-          "Description": "Get locates the filename given in Hugo's assets filesystem and\ncreates a Resource object that can be used for\nfurther transformations.",
+          "Description": "Get locates the filename given in Hugo's assets filesystem\nand creates a Resource object that can be used for further transformations.",
           "Args": [
             "filename"
           ],
@@ -4854,6 +4876,12 @@
       },
       "site": {
         "BaseURL": {
+          "Description": "",
+          "Args": null,
+          "Aliases": null,
+          "Examples": null
+        },
+        "Current": {
           "Description": "",
           "Args": null,
           "Aliases": null,

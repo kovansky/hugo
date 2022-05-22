@@ -401,7 +401,7 @@ Now you need to add Hugo to your Windows PATH settings:
 
 #### For Windows 7 and 8.x users:
 
-Windows 7 and 8.1 do not include the easy path editor included in Windows 10, so non-technical users on those platforms are advised to install a free third-party path editor like [Windows Environment Variables Editor][Windows Environment Variables Editor] or [Path Editor](https://patheditor2.codeplex.com/).
+Windows 7 and 8.1 do not include the easy path editor included in Windows 10, so non-technical users on those platforms are advised to install a free third-party path editor like [Windows Environment Variables Editor].
 
 ### Verify the Executable
 
@@ -553,11 +553,10 @@ Now that you've installed Hugo, read the [Quick Start guide][quickstart] and exp
 [installgit]: https://git-scm.com/
 [installgo]: https://golang.org/dl/
 [linuxbrew]: https://docs.brew.sh/Homebrew-on-Linux
-[Path Editor]: https://patheditor2.codeplex.com/
 [quickstart]: /getting-started/quick-start/
 [redhatforum]: https://discourse.gohugo.io/t/solved-fedora-copr-repository-out-of-service/2491
 [releases]: https://github.com/gohugoio/hugo/releases
 [Scoop]: https://scoop.sh/
 [snaps]: https://snapcraft.io/docs/installing-snapd
 [windowsarch]: https://esupport.trendmicro.com/en-us/home/pages/technical-support/1038680.aspx
-[Windows Environment Variables Editor]: http://eveditor.com/
+[Windows Environment Variables Editor]: https://eveditor.com/

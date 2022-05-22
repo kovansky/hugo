@@ -164,6 +164,43 @@ fmt.Println("Hello, World!");
 	)
 }
 
+func TestCodeblocksBugs(t *testing.T) {
+	t.Parallel()
+
+	files := `
+-- config.toml --
+-- layouts/_default/_markup/render-codeblock.html --
+{{ .Position | safeHTML }}
+-- layouts/_default/single.html --
+{{ .Content }}
+-- content/p1.md --
+---
+title: "p1"
+---
+
+## Issue 9627
+
+§§§text
+{{</* foo */>}}
+§§§
+
+`
+
+	b := hugolib.NewIntegrationTestBuilder(
+		hugolib.IntegrationTestConfig{
+			T:           t,
+			TxtarString: files,
+			NeedsOsFS:   false,
+		},
+	).Build()
+
+	b.AssertFileContent("public/p1/index.html", `
+# Issue 9627: For the Position in code blocks we try to match the .Inner with the original source. This isn't always possible.
+p1.md:0:0
+	`,
+	)
+}
+
 func TestCodeChomp(t *testing.T) {
 	t.Parallel()
 
@@ -225,7 +262,7 @@ Position: {{ .Position | safeHTML }}
 		},
 	).Build()
 
-	b.AssertFileContent("public/p1/index.html", filepath.FromSlash("Position: \"content/p1.md:7:1\""))
+	b.AssertFileContent("public/p1/index.html", filepath.FromSlash("Position: \"/content/p1.md:7:1\""))
 }
 
 // Issue 9571
@@ -264,4 +301,52 @@ Attributes: {{ .Attributes }}|Options: {{ .Options }}|
 
 	testLanguage("bash", "Attributes: map[]|Options: map[style:monokai]|")
 	testLanguage("hugo", "Attributes: map[style:monokai]|Options: map[]|")
+}
+
+func TestPanics(t *testing.T) {
+
+	files := `
+-- config.toml --
+[markup]
+[markup.goldmark]
+[markup.goldmark.parser]
+autoHeadingID = true
+autoHeadingIDType = "github"
+[markup.goldmark.parser.attribute]
+block = true
+title = true
+-- content/p1.md --
+---
+title: "p1"
+---
+
+BLOCK
+
+Common
+
+-- layouts/_default/single.html --
+{{ .Content }}
+
+
+`
+
+	for _, test := range []struct {
+		name     string
+		markdown string
+	}{
+		{"issue-9819", "asdf\n: {#myid}"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			b := hugolib.NewIntegrationTestBuilder(
+				hugolib.IntegrationTestConfig{
+					T:           t,
+					TxtarString: strings.ReplaceAll(files, "BLOCK", test.markdown),
+				},
+			).Build()
+
+			b.AssertFileContent("public/p1/index.html", "Common")
+		})
+	}
+
 }

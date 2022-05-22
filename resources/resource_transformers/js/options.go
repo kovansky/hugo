@@ -21,7 +21,6 @@ import (
 	"strings"
 
 	"github.com/gohugoio/hugo/common/maps"
-	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 
 	"github.com/evanw/esbuild/pkg/api"
@@ -71,14 +70,14 @@ type Options struct {
 	Inject []string
 
 	// User defined symbols.
-	Defines map[string]interface{}
+	Defines map[string]any
 
 	// Maps a component import to another.
 	Shims map[string]string
 
 	// User defined params. Will be marshaled to JSON and available as "@params", e.g.
 	//     import * as params from '@params';
-	Params interface{}
+	Params any
 
 	// What to use instead of React.createElement.
 	JSXFactory string
@@ -106,7 +105,7 @@ type Options struct {
 	tsConfig   string
 }
 
-func decodeOptions(m map[string]interface{}) (Options, error) {
+func decodeOptions(m map[string]any) (Options, error) {
 	var opts Options
 
 	if err := mapstructure.WeakDecode(m, &opts); err != nil {
@@ -251,7 +250,7 @@ func createBuildPlugins(c *Client, opts Options) ([]api.Plugin, error) {
 				func(args api.OnLoadArgs) (api.OnLoadResult, error) {
 					b, err := ioutil.ReadFile(args.Path)
 					if err != nil {
-						return api.OnLoadResult{}, errors.Wrapf(err, "failed to read %q", args.Path)
+						return api.OnLoadResult{}, fmt.Errorf("failed to read %q: %w", args.Path, err)
 					}
 					c := string(b)
 					return api.OnLoadResult{
@@ -269,12 +268,12 @@ func createBuildPlugins(c *Client, opts Options) ([]api.Plugin, error) {
 	params := opts.Params
 	if params == nil {
 		// This way @params will always resolve to something.
-		params = make(map[string]interface{})
+		params = make(map[string]any)
 	}
 
 	b, err := json.Marshal(params)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal params")
+		return nil, fmt.Errorf("failed to marshal params: %w", err)
 	}
 	bs := string(b)
 	paramsPlugin := api.Plugin{

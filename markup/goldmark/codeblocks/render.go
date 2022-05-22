@@ -19,6 +19,7 @@ import (
 	"sync"
 
 	"github.com/alecthomas/chroma/lexers"
+	"github.com/gohugoio/hugo/common/herrors"
 	htext "github.com/gohugoio/hugo/common/text"
 	"github.com/gohugoio/hugo/markup/converter/hooks"
 	"github.com/gohugoio/hugo/markup/goldmark/internal/render"
@@ -114,8 +115,8 @@ func (r *htmlRenderer) renderCodeBlock(w util.BufWriter, src []byte, node ast.No
 		}
 		return htext.Position{
 			Filename:     ctx.DocumentContext().Filename,
-			LineNumber:   0,
-			ColumnNumber: 0,
+			LineNumber:   1,
+			ColumnNumber: 1,
 		}
 	}
 
@@ -128,11 +129,15 @@ func (r *htmlRenderer) renderCodeBlock(w util.BufWriter, src []byte, node ast.No
 
 	ctx.AddIdentity(cr)
 
-	return ast.WalkContinue, err
+	if err != nil {
+		return ast.WalkContinue, herrors.NewFileErrorFromPos(err, cbctx.createPos())
+	}
+
+	return ast.WalkContinue, nil
 }
 
 type codeBlockContext struct {
-	page    interface{}
+	page    any
 	lang    string
 	code    string
 	ordinal int
@@ -146,7 +151,7 @@ type codeBlockContext struct {
 	*attributes.AttributesHolder
 }
 
-func (c *codeBlockContext) Page() interface{} {
+func (c *codeBlockContext) Page() any {
 	return c.page
 }
 

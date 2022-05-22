@@ -23,10 +23,12 @@ import (
 	"sync"
 	"unicode/utf8"
 
+	"errors"
+
 	"github.com/gohugoio/hugo/common/text"
+	"github.com/gohugoio/hugo/common/types/hstring"
 	"github.com/gohugoio/hugo/identity"
 	"github.com/mitchellh/mapstructure"
-	"github.com/pkg/errors"
 	"github.com/spf13/cast"
 
 	"github.com/gohugoio/hugo/markup/converter/hooks"
@@ -194,11 +196,11 @@ func newPageContentOutput(p *pageState, po *pageOutput) (*pageContentOutput, err
 	}
 
 	// There may be recursive loops in shortcodes and render hooks.
-	cp.initMain = parent.BranchWithTimeout(p.s.siteCfg.timeout, func(ctx context.Context) (interface{}, error) {
+	cp.initMain = parent.BranchWithTimeout(p.s.siteCfg.timeout, func(ctx context.Context) (any, error) {
 		return nil, initContent()
 	})
 
-	cp.initPlain = cp.initMain.Branch(func() (interface{}, error) {
+	cp.initPlain = cp.initMain.Branch(func() (any, error) {
 		cp.plain = helpers.StripHTML(string(cp.content))
 		cp.plainWords = strings.Fields(cp.plain)
 		cp.setWordCounts(p.m.isCJKLanguage)
@@ -271,7 +273,7 @@ func (p *pageContentOutput) Reset() {
 	p.renderHooks = &renderHooks{}
 }
 
-func (p *pageContentOutput) Content() (interface{}, error) {
+func (p *pageContentOutput) Content() (any, error) {
 	if p.p.s.initInit(p.initMain, p.p) {
 		return p.content, nil
 	}
@@ -329,7 +331,7 @@ func (p *pageContentOutput) WordCount() int {
 	return p.wordCount
 }
 
-func (p *pageContentOutput) RenderString(args ...interface{}) (template.HTML, error) {
+func (p *pageContentOutput) RenderString(args ...any) (template.HTML, error) {
 	if len(args) < 1 || len(args) > 2 {
 		return "", errors.New("want 1 or 2 arguments")
 	}
@@ -341,18 +343,26 @@ func (p *pageContentOutput) RenderString(args ...interface{}) (template.HTML, er
 	if len(args) == 1 {
 		sidx = 0
 	} else {
-		m, ok := args[0].(map[string]interface{})
+		m, ok := args[0].(map[string]any)
 		if !ok {
 			return "", errors.New("first argument must be a map")
 		}
 
 		if err := mapstructure.WeakDecode(m, &opts); err != nil {
-			return "", errors.WithMessage(err, "failed to decode options")
+			return "", fmt.Errorf("failed to decode options: %w", err)
 		}
 	}
 
+	contentToRender := args[sidx]
+
+	if _, ok := contentToRender.(hstring.RenderedString); ok {
+		// This content is already rendered, this is potentially
+		// a infinite recursion.
+		return "", errors.New("text is already rendered, repeating it may cause infinite recursion")
+	}
+
 	var err error
-	s, err = cast.ToStringE(args[sidx])
+	s, err = cast.ToStringE(contentToRender)
 	if err != nil {
 		return "", err
 	}
@@ -407,7 +417,7 @@ func (p *pageContentOutput) Render(layout ...string) (template.HTML, error) {
 	// Make sure to send the *pageState and not the *pageContentOutput to the template.
 	res, err := executeToString(p.p.s.Tmpl(), templ, p.p)
 	if err != nil {
-		return "", p.p.wrapError(errors.Wrapf(err, "failed to execute template %q v", layout))
+		return "", p.p.wrapError(fmt.Errorf("failed to execute template %s: %w", templ.Name(), err))
 	}
 	return template.HTML(res), nil
 }
@@ -424,14 +434,14 @@ func (p *pageContentOutput) initRenderHooks() error {
 
 		type cacheKey struct {
 			tp hooks.RendererType
-			id interface{}
+			id any
 			f  output.Format
 		}
 
-		renderCache := make(map[cacheKey]interface{})
+		renderCache := make(map[cacheKey]any)
 		var renderCacheMu sync.Mutex
 
-		resolvePosition := func(ctx interface{}) text.Position {
+		resolvePosition := func(ctx any) text.Position {
 			var offset int
 
 			switch v := ctx.(type) {
@@ -450,7 +460,7 @@ func (p *pageContentOutput) initRenderHooks() error {
 			return pos
 		}
 
-		p.renderHooks.getRenderer = func(tp hooks.RendererType, id interface{}) interface{} {
+		p.renderHooks.getRenderer = func(tp hooks.RendererType, id any) any {
 			renderCacheMu.Lock()
 			defer renderCacheMu.Unlock()
 
@@ -515,7 +525,6 @@ func (p *pageContentOutput) initRenderHooks() error {
 					}
 				}
 			}
-
 			if !found1 {
 				if tp == hooks.CodeBlockRendererType {
 					// No user provided tempplate for code blocks, so we use the native Go code version -- which is also faster.
@@ -642,7 +651,7 @@ func (t targetPathsHolder) targetPaths() page.TargetPaths {
 	return t.paths
 }
 
-func executeToString(h tpl.TemplateHandler, templ tpl.Template, data interface{}) (string, error) {
+func executeToString(h tpl.TemplateHandler, templ tpl.Template, data any) (string, error) {
 	b := bp.GetBuffer()
 	defer bp.PutBuffer(b)
 	if err := h.Execute(templ, b, data); err != nil {

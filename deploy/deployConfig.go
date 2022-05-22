@@ -20,12 +20,13 @@ import (
 	"fmt"
 	"regexp"
 
+	"errors"
+
 	"github.com/gobwas/glob"
 	"github.com/gohugoio/hugo/config"
 	hglob "github.com/gohugoio/hugo/hugofs/glob"
 	"github.com/gohugoio/hugo/media"
 	"github.com/mitchellh/mapstructure"
-	"github.com/pkg/errors"
 )
 
 const deploymentConfigKey = "deployment"
@@ -115,7 +116,7 @@ func (m *matcher) Matches(path string) bool {
 // decode creates a config from a given Hugo configuration.
 func decodeConfig(cfg config.Provider) (deployConfig, error) {
 	var (
-		mediaTypesConfig []map[string]interface{}
+		mediaTypesConfig []map[string]any
 		dcfg             deployConfig
 	)
 

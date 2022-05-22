@@ -14,7 +14,7 @@ hugo is the main command, used to build your Hugo site.
 Hugo is a Fast and Flexible Static Site Generator
 built with love by spf13 and friends in Go.
 
-Complete documentation is available at http://gohugo.io/.
+Complete documentation is available at https://gohugo.io/.
 
 ```
 hugo [flags]
@@ -23,12 +23,13 @@ hugo [flags]
 ### Options
 
 ```
-  -b, --baseURL string             hostname (and path) to the root, e.g. http://spf13.com/
+  -b, --baseURL string             hostname (and path) to the root, e.g. https://spf13.com/
   -D, --buildDrafts                include content marked as draft
   -E, --buildExpired               include expired content
   -F, --buildFuture                include content with publishdate in the future
       --cacheDir string            filesystem path to cache directory. Defaults: $TMPDIR/hugo_cache/
       --cleanDestinationDir        remove files from destination not found in static directories
+      --clock string               set the clock used by Hugo, e.g. --clock 2021-11-06T22:30:00.00+09:00
       --config string              config file (default is path/config.yaml|json|toml)
       --configDir string           config dir (default "config")
   -c, --contentDir string          filesystem path to content directory

@@ -31,7 +31,6 @@ import (
 	"github.com/gohugoio/hugo/hugofs"
 
 	"github.com/gohugoio/hugo/common/hugio"
-	_errors "github.com/pkg/errors"
 	"github.com/spf13/afero"
 )
 
@@ -403,7 +402,7 @@ func GetCacheDir(fs afero.Fs, cfg config.Provider) (string, error) {
 		if !exists {
 			err := fs.MkdirAll(cacheDir, 0777) // Before umask
 			if err != nil {
-				return "", _errors.Wrap(err, "failed to create cache dir")
+				return "", fmt.Errorf("failed to create cache dir: %w", err)
 			}
 		}
 		return cacheDir, nil
@@ -459,9 +458,17 @@ func IsDir(path string, fs afero.Fs) (bool, error) {
 	return afero.IsDir(fs, path)
 }
 
-// IsEmpty checks if a given path is empty.
+// IsEmpty checks if a given path is empty, meaning it doesn't contain any regular files.
 func IsEmpty(path string, fs afero.Fs) (bool, error) {
-	return afero.IsEmpty(fs, path)
+	var hasFile bool
+	err := afero.Walk(fs, path, func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return nil
+		}
+		hasFile = true
+		return filepath.SkipDir
+	})
+	return !hasFile, err
 }
 
 // Exists checks if a file or directory exists.

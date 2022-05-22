@@ -44,7 +44,7 @@ func convert(c *qt.C, mconf markup_config.Config, content string) converter.Resu
 	c.Assert(err, qt.IsNil)
 	h := highlight.New(mconf.Highlight)
 
-	getRenderer := func(t hooks.RendererType, id interface{}) interface{} {
+	getRenderer := func(t hooks.RendererType, id any) any {
 		if t == hooks.CodeBlockRendererType {
 			return h
 		}
@@ -177,8 +177,8 @@ description
 	c.Assert(got, qt.Contains, `Dashes (“&ndash;” and “&mdash;”) `)
 	c.Assert(got, qt.Contains, `Three consecutive dots (“&hellip;”)`)
 	c.Assert(got, qt.Contains, `&ldquo;That was back in the &rsquo;90s, that&rsquo;s a long time ago&rdquo;`)
-	c.Assert(got, qt.Contains, `footnote.<sup id="fnref:1"><a href="#fn:1" class="footnote-ref" role="doc-noteref">1</a></sup>`)
-	c.Assert(got, qt.Contains, `<section class="footnotes" role="doc-endnotes">`)
+	c.Assert(got, qt.Contains, `footnote.<sup id="fnref1:1"><a href="#fn:1" class="footnote-ref" role="doc-noteref">1</a></sup>`)
+	c.Assert(got, qt.Contains, `<div class="footnotes" role="doc-endnotes">`)
 	c.Assert(got, qt.Contains, `<dt>date</dt>`)
 
 	toc, ok := b.(converter.TableOfContentsProvider)
@@ -233,7 +233,7 @@ func TestConvertAttributes(t *testing.T) {
 		name       string
 		withConfig func(conf *markup_config.Config)
 		input      string
-		expect     interface{}
+		expect     any
 	}{
 		{
 			"Title",
@@ -408,7 +408,7 @@ LINE5
 
 		h := highlight.New(conf)
 
-		getRenderer := func(t hooks.RendererType, id interface{}) interface{} {
+		getRenderer := func(t hooks.RendererType, id any) any {
 			if t == hooks.CodeBlockRendererType {
 				return h
 			}

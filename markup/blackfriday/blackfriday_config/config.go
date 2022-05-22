@@ -19,8 +19,9 @@
 package blackfriday_config
 
 import (
+	"fmt"
+
 	"github.com/mitchellh/mapstructure"
-	"github.com/pkg/errors"
 )
 
 // Default holds the default BlackFriday config.
@@ -62,9 +63,9 @@ type Config struct {
 	FootnoteReturnLinkContents string
 }
 
-func UpdateConfig(b Config, m map[string]interface{}) (Config, error) {
+func UpdateConfig(b Config, m map[string]any) (Config, error) {
 	if err := mapstructure.Decode(m, &b); err != nil {
-		return b, errors.WithMessage(err, "failed to decode rendering config")
+		return b, fmt.Errorf("failed to decode rendering config: %w", err)
 	}
 	return b, nil
 }
