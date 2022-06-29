@@ -300,9 +300,6 @@ defaultContentLanguageInSubdir = true
 [permalinks]
 other = "/somewhere/else/:filename"
 
-[blackfriday]
-angledQuotes = true
-
 [Taxonomies]
 tag = "tags"
 
@@ -311,8 +308,6 @@ tag = "tags"
 weight = 10
 title = "In English"
 languageName = "English"
-[Languages.en.blackfriday]
-angledQuotes = false
 [[Languages.en.menu.main]]
 url    = "/"
 name   = "Home"
@@ -858,7 +853,7 @@ func (th testHelper) assertFileContentRegexp(filename string, matches ...string)
 		r := regexp.MustCompile(match)
 		matches := r.MatchString(content)
 		if !matches {
-			fmt.Println(match+":\n", content)
+			fmt.Println("Expected to match regexp:\n"+match+"\nGot:\n", content)
 		}
 		th.Assert(matches, qt.Equals, true)
 	}
